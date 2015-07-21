@@ -15,7 +15,10 @@
     var size = stream.dimension()
         .title('Size')
         .types(Number)
-        .required(1)
+    
+    var color = stream.dimension()
+        .title('Color')
+        .types(String, Date, Number)
 
     stream.map(function (data){
         if (!group()) return [];
@@ -32,7 +35,8 @@
                         return {
                             group : group(d[0]),
                             x : date(d[0]),
-                            y : size() ? d3.sum(d,size) : d.length
+                            y : size() ? d3.sum(d,size) : d.length,
+                            color: color() ? color(d[0]) : ""
                         }
                     })
                     .map(g);
@@ -84,7 +88,7 @@
 
     var sort = chart.list()
         .title("Sort by")
-        .values(['value (descending)', 'value (ascending)', 'group'])
+        .values(['value (descending)', 'value (ascending)', 'group', 'color'])
         .defaultValue('value (descending)')
 
     var showLabels = chart.checkbox()
@@ -186,7 +190,7 @@
             .style("fill","none")
             .style("stroke","#ccc")
 
-        colors.domain(layers, function (d){ return d[0].group; })
+        colors.domain(layers, function (d){ return d[0].color; })
 
         var area = d3.svg.area()
             .interpolate(curves[curve()])
@@ -208,8 +212,9 @@
                 .attr("class","layer")
                 .attr("d", area)
                 .attr("title", function (d){ return d[0].group; })
+                //.attr("id", function (d){ return d[0].group; })
                 .style("fill-opacity",.9)
-                .style("fill", function (d) { return colors()(d[0].group); });
+                .style("fill", function (d) { return colors()(d[0].color); });
 
         if (!showLabels()) return;
 
@@ -253,6 +258,24 @@
             if (sort() == 'value (descending)') return a.y - b.y;
             if (sort() == 'value (ascending)') return b.y - a.y;
             if (sort() == 'group') return a.group - b.group;
+            if (sort() == 'color')
+            {
+            	var result;
+            	try
+            	{
+            		result = a.color.localeCompare(b.color);
+            		if(result == 0)
+            		{
+            			return a.y - b.y;
+            		}
+            	}
+            	catch(e)
+            	{
+            		console.log(a);
+            		result = 0
+            	}
+            	return result
+            }
         }
 
         function interpolate(points) {
