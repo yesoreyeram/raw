@@ -162,7 +162,7 @@
                 return layer[i];
             })
             .sort(sortBy);
-
+			console.log(values)
             var sum = d3.sum(values, function(layer){ return layer.y; });
             var y0 = normalize() ? 0 : -sum/2 + y.invert( (+height()-20)/2 ) - padding()*(values.length-1)/2;
 

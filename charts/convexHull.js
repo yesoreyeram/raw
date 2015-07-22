@@ -4,7 +4,6 @@
 
     points.dimensions().remove('size');
     points.dimensions().remove('label');
-    points.dimensions().remove('color');
 
     var chart = raw.chart()
         .title('Convex Hull')
