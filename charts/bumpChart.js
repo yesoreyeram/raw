@@ -28,10 +28,10 @@
         var groups = d3.nest()
             .key(group)
             .rollup(function (g){
+
                 var singles = d3.nest()
                     .key(function(d){ return date(d); })
                     .rollup(function (d){
-						console.log(g, color(d[0]));
                         return {
                             group : group(d[0]),
                             x : date(d[0]),
@@ -44,16 +44,13 @@
                 // let's create the empty ones
                 dates.forEach(function(d){
                     if (!singles.hasOwnProperty(d)) {
-                        singles[d] = { group : group(g[0]), x : d, y : 0, color: color() ? color(g[0]) : "" }
+                        singles[d] = { group : group(g[0]), x : d, y : 0 }
                     }
                 })
 
                 return d3.values(singles);
             })
             .map(data)
-        
-        		console.log(d3.values(groups).map(function(d){ return d.sort(function(a,b){ return a.x - b.x; }) }))
-
 
         return d3.values(groups).map(function(d){ return d.sort(function(a,b){ return a.x - b.x; }) });
 
@@ -106,6 +103,7 @@
         .title("Color scale")
 
     chart.draw(function (selection, data){
+
         var g = selection
             .attr("width", +width() )
             .attr("xmlns:xmlns:xlink", "http://www.w3.org/1999/xlink")
@@ -164,6 +162,7 @@
                 return layer[i];
             })
             .sort(sortBy);
+
             var sum = d3.sum(values, function(layer){ return layer.y; });
             var y0 = normalize() ? 0 : -sum/2 + y.invert( (+height()-20)/2 ) - padding()*(values.length-1)/2;
 
