@@ -17,6 +17,10 @@
         .types(Number)
         .required(1)
 
+    var color = stream.dimension()
+        .title('Color')
+        .types(String, Date, Number)
+
     stream.map(function (data){
         if (!group()) return [];
 
@@ -31,7 +35,8 @@
                         return {
                             group : group(d[0]),
                             date : date(d[0]),
-                            size : size() ? d3.sum(d,size) : d.length
+                            size : size() ? d3.sum(d,size) : d.length,
+                            color: color() ? color(d[0]) : ""
                         }
                     })
                     .map(g);
@@ -39,8 +44,9 @@
                 return d3.values(singles);
             })
             .map(data)
+		
 
-        return d3.values(groups).map(function(d){ return d.sort(function(a,b){ return a.date - b.date; }) });
+        return d3.values(groups).map(function(d){return d.sort(function(a,b){ return a.date - b.date; }) });
 
     })
 
@@ -70,6 +76,11 @@
 
     var colors = chart.color()
         .title("Color scale")
+    
+    var sort = chart.list()
+        .title("Sort by")
+        .values(['Size (ascending)','Size (descending)','Name','Start date (ascending)', 'Start date (descending)'])
+        .defaultValue('Size (ascending)')
 
     chart.draw(function (selection, data){
 
@@ -96,8 +107,11 @@
             d3.min(data, function(layer) { return d3.min(layer, function(d) { return d.date; }); }),
             d3.max(data, function(layer) { return d3.max(layer, function(d) { return d.date; }); })
         ])
+        
+        
+        console.log(data)
 
-        colors.domain(data, function (d){ return d[0].group; })
+        colors.domain(data, function (d){ return d[0].color; })
 
         var xAxis = d3.svg.axis().scale(x).tickSize(-height()+15).orient("bottom");
 
@@ -116,7 +130,7 @@
 
 
         svg.selectAll("g.flow")
-            .data(data)
+            .data(data.sort(sortBy))
             .enter().append("g")
             .attr("class","flow")
             .attr("title", function(d) { return d[0].group; })
@@ -128,7 +142,7 @@
             .attr("x", w - 6)
             .attr("y", h - 6)
             .style("font-size","10px")
-            .style("fill", function(d){ return raw.foreground(colors()(d[0].group)) })
+            .style("fill", function(d){ return raw.foreground(colors()(d[0].color)) })
             .style("font-family","Arial, Helvetica")
             .style("text-anchor", "end")
             .text(function(d) { return d[0].group; });
@@ -142,8 +156,16 @@
 
             g.append("path")
               .attr("class", "area")
-              .style("fill", function(d){ return colors()(d[0].group); })
+              .style("fill", function(d){ return colors()(d[0].color); })
               .attr("d", area(single));
+        }
+        
+        function sortBy(a,b){
+            if (sort() == 'Start date (descending)') return a[0].date - b[0].date;
+            if (sort() == 'Start date (ascending)') return b[0].date - a[0].date;
+            if (sort() == 'Name') return a[0].group < b[0].group ? -1 : a[0].group > b[0].group ? 1 : 0;
+            if (sort() == 'Size (ascending)') return d3.sum(a,function(d){return d.size}) < d3.sum(b,function(d){return d.size}) ? -1 : d3.sum(a,function(d){return d.size}) > d3.sum(b,function(d){return d.size}) ? 1 : 0;
+			if (sort() == 'Size (descending)') return d3.sum(a,function(d){return d.size}) < d3.sum(b,function(d){return d.size}) ? 1 : d3.sum(a,function(d){return d.size}) > d3.sum(b,function(d){return d.size}) ? -1 : 0;
         }
 
     })

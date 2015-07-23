@@ -15,7 +15,10 @@
     var size = stream.dimension()
         .title('Size')
         .types(Number)
-        .required(1)
+    
+    var color = stream.dimension()
+        .title('Color')
+        .types(String, Date, Number)
 
     stream.map(function (data){
         if (!group()) return [];
@@ -25,14 +28,15 @@
         var groups = d3.nest()
             .key(group)
             .rollup(function (g){
-
                 var singles = d3.nest()
                     .key(function(d){ return date(d); })
                     .rollup(function (d){
+						console.log(g, color(d[0]));
                         return {
                             group : group(d[0]),
                             x : date(d[0]),
-                            y : size() ? d3.sum(d,size) : d.length
+                            y : size() ? d3.sum(d,size) : d.length,
+                            color: color() ? color(d[0]) : ""
                         }
                     })
                     .map(g);
@@ -40,13 +44,16 @@
                 // let's create the empty ones
                 dates.forEach(function(d){
                     if (!singles.hasOwnProperty(d)) {
-                        singles[d] = { group : group(g[0]), x : d, y : 0 }
+                        singles[d] = { group : group(g[0]), x : d, y : 0, color: color() ? color(g[0]) : "" }
                     }
                 })
 
                 return d3.values(singles);
             })
             .map(data)
+        
+        		console.log(d3.values(groups).map(function(d){ return d.sort(function(a,b){ return a.x - b.x; }) }))
+
 
         return d3.values(groups).map(function(d){ return d.sort(function(a,b){ return a.x - b.x; }) });
 
@@ -84,7 +91,7 @@
 
     var sort = chart.list()
         .title("Sort by")
-        .values(['value (descending)', 'value (ascending)', 'group'])
+        .values(['value (descending)', 'value (ascending)', 'group', 'color'])
         .defaultValue('value (descending)')
 
     var showLabels = chart.checkbox()
@@ -99,7 +106,6 @@
         .title("Color scale")
 
     chart.draw(function (selection, data){
-
         var g = selection
             .attr("width", +width() )
             .attr("xmlns:xmlns:xlink", "http://www.w3.org/1999/xlink")
@@ -158,7 +164,6 @@
                 return layer[i];
             })
             .sort(sortBy);
-
             var sum = d3.sum(values, function(layer){ return layer.y; });
             var y0 = normalize() ? 0 : -sum/2 + y.invert( (+height()-20)/2 ) - padding()*(values.length-1)/2;
 
@@ -186,7 +191,7 @@
             .style("fill","none")
             .style("stroke","#ccc")
 
-        colors.domain(layers, function (d){ return d[0].group; })
+        colors.domain(layers, function (d){ return d[0].color; })
 
         var area = d3.svg.area()
             .interpolate(curves[curve()])
@@ -208,8 +213,9 @@
                 .attr("class","layer")
                 .attr("d", area)
                 .attr("title", function (d){ return d[0].group; })
+                //.attr("id", function (d){ return d[0].group; })
                 .style("fill-opacity",.9)
-                .style("fill", function (d) { return colors()(d[0].group); });
+                .style("fill", function (d) { return colors()(d[0].color); });
 
         if (!showLabels()) return;
 
@@ -253,6 +259,24 @@
             if (sort() == 'value (descending)') return a.y - b.y;
             if (sort() == 'value (ascending)') return b.y - a.y;
             if (sort() == 'group') return a.group - b.group;
+            if (sort() == 'color')
+            {
+            	var result;
+            	try
+            	{
+            		result = a.color.localeCompare(b.color);
+            		if(result == 0)
+            		{
+            			return a.y - b.y;
+            		}
+            	}
+            	catch(e)
+            	{
+            		console.log(a);
+            		result = 0
+            	}
+            	return result
+            }
         }
 
         function interpolate(points) {
